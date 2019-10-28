@@ -1,0 +1,43 @@
+---
+title: "YOY Loop"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(gganimate)
+
+park_visits_region <- park_visits %>% 
+  select(year, region, unit_name, visitors) %>% 
+  filter(year != "Total") %>%
+  mutate(year = as.integer(year)) %>%
+  arrange(year) %>%
+  group_by(year, region) %>%
+  summarise(visitors_total = sum(visitors))
+
+pv_rg_yoy <-park_visits_region %>%
+  filter(year != "Total" & year>1990 & region != "NC") %>%
+  group_by(region) %>% 
+  arrange(year) %>%
+  mutate(yoy = visitors_total - lag(visitors_total))
+
+graph <- ggplot(pv_rg_yoy, aes(year, yoy,colour = region)) +
+    geom_line() +
+    geom_point() +
+  scale_color_hue(labels = c("Alaska", "Intermountain", "Midwest", "Northeast", "National Capital",     "Pacific-West", "Southeast"))+
+  ggtitle("National Park Visitors by Region") +
+  scale_y_continuous(limits = c(-4000000, 6000000), labels= c("-4M", "-2M", "0", "2M", "4M", "6M"))+
+  theme(
+    axis.title.x = element_text(color = "black", size = 14, face = "bold"),
+    axis.title.y = element_text(color = "black", size = 14, face = "bold")
+    )+
+  theme(
+    plot.title = element_text(color = "black", size = 18, face = "bold"))+             
+    ylab("Change In Visitors") + xlab("Year")+
+    transition_reveal(year) + 
+  theme(legend.title=element_blank())
+
+  animate(graph, nframes = 100, fps=5, renderer = gifski_renderer(loop = F))
+```
